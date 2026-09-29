@@ -1466,34 +1466,34 @@ def caption_style_lines(style_name: str) -> List[str]:
     style_name = style_name or "Viral Pop"
     if style_name == "Viral Pop":
         return [
-            "Style: Hook,Arial Unicode MS,66,&H00FFFFFF,&H000000FF,&H00000000,&HDD111111,1,0,0,0,100,100,0,0,1,6,3,8,70,70,135,1",
-            "Style: CapA,Arial Unicode MS,72,&H0000FFFF,&H000000FF,&H00000000,&HE0000000,1,0,0,0,100,100,0,0,1,8,4,2,58,58,455,1",
-            "Style: CapB,Arial Unicode MS,72,&H00FFFFFF,&H000000FF,&H00005CFF,&HE0000000,1,0,0,0,100,100,0,0,1,8,4,2,58,58,455,1",
-            "Style: Pop,Arial Unicode MS,86,&H0000FFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,8,4,5,56,56,0,1",
-            "Style: CTA,Arial Unicode MS,54,&H0000FFFF,&H000000FF,&H00000000,&HDD000000,1,0,0,0,100,100,0,0,1,6,3,2,72,72,195,1",
+            "Style: Hook,Noto Sans CJK TC,66,&H00FFFFFF,&H000000FF,&H00000000,&HDD111111,1,0,0,0,100,100,0,0,1,6,3,8,70,70,135,1",
+            "Style: CapA,Noto Sans CJK TC,72,&H0000FFFF,&H000000FF,&H00000000,&HE0000000,1,0,0,0,100,100,0,0,1,8,4,2,58,58,455,1",
+            "Style: CapB,Noto Sans CJK TC,72,&H00FFFFFF,&H000000FF,&H00005CFF,&HE0000000,1,0,0,0,100,100,0,0,1,8,4,2,58,58,455,1",
+            "Style: Pop,Noto Sans CJK TC,86,&H0000FFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,8,4,5,56,56,0,1",
+            "Style: CTA,Noto Sans CJK TC,54,&H0000FFFF,&H000000FF,&H00000000,&HDD000000,1,0,0,0,100,100,0,0,1,6,3,2,72,72,195,1",
         ]
     if style_name == "Neon Cyan":
         return [
-            "Style: Hook,Arial Unicode MS,60,&H00FFFFFF,&H000000FF,&H00FFAA00,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,8,78,78,155,1",
-            "Style: CapA,Arial Unicode MS,66,&H00FFFFFF,&H000000FF,&H00FFAA00,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
-            "Style: CapB,Arial Unicode MS,66,&H00FFFF00,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
-            "Style: Pop,Arial Unicode MS,78,&H00FFFF00,&H000000FF,&H00FFAA00,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,5,56,56,0,1",
-            "Style: CTA,Arial Unicode MS,52,&H0000FFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,2,88,88,205,1",
+            "Style: Hook,Noto Sans CJK TC,60,&H00FFFFFF,&H000000FF,&H00FFAA00,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,8,78,78,155,1",
+            "Style: CapA,Noto Sans CJK TC,66,&H00FFFFFF,&H000000FF,&H00FFAA00,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
+            "Style: CapB,Noto Sans CJK TC,66,&H00FFFF00,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
+            "Style: Pop,Noto Sans CJK TC,78,&H00FFFF00,&H000000FF,&H00FFAA00,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,5,56,56,0,1",
+            "Style: CTA,Noto Sans CJK TC,52,&H0000FFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,2,88,88,205,1",
         ]
     if style_name == "Clean White":
         return [
-            "Style: Hook,Arial Unicode MS,58,&H00FFFFFF,&H000000FF,&H00000000,&H99000000,1,0,0,0,100,100,0,0,1,4,1,8,86,86,165,1",
-            "Style: CapA,Arial Unicode MS,64,&H00FFFFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,6,2,2,70,70,450,1",
-            "Style: CapB,Arial Unicode MS,64,&H00EAEAEA,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,6,2,2,70,70,450,1",
-            "Style: Pop,Arial Unicode MS,72,&H00FFFFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,5,2,5,56,56,0,1",
-            "Style: CTA,Arial Unicode MS,50,&H00FFFFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,4,1,2,92,92,205,1",
+            "Style: Hook,Noto Sans CJK TC,58,&H00FFFFFF,&H000000FF,&H00000000,&H99000000,1,0,0,0,100,100,0,0,1,4,1,8,86,86,165,1",
+            "Style: CapA,Noto Sans CJK TC,64,&H00FFFFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,6,2,2,70,70,450,1",
+            "Style: CapB,Noto Sans CJK TC,64,&H00EAEAEA,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,6,2,2,70,70,450,1",
+            "Style: Pop,Noto Sans CJK TC,72,&H00FFFFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,5,2,5,56,56,0,1",
+            "Style: CTA,Noto Sans CJK TC,50,&H00FFFFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,4,1,2,92,92,205,1",
         ]
     return [
-        "Style: Hook,Arial Unicode MS,60,&H00FFFFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,8,78,78,155,1",
-        "Style: CapA,Arial Unicode MS,66,&H00FFFFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
-        "Style: CapB,Arial Unicode MS,66,&H0000FFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
-        "Style: Pop,Arial Unicode MS,76,&H0000FFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,6,3,5,56,56,0,1",
-        "Style: CTA,Arial Unicode MS,52,&H0000FFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,2,88,88,205,1",
+        "Style: Hook,Noto Sans CJK TC,60,&H00FFFFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,8,78,78,155,1",
+        "Style: CapA,Noto Sans CJK TC,66,&H00FFFFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
+        "Style: CapB,Noto Sans CJK TC,66,&H0000FFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,7,3,2,66,66,450,1",
+        "Style: Pop,Noto Sans CJK TC,76,&H0000FFFF,&H000000FF,&H00000000,&HCC000000,1,0,0,0,100,100,0,0,1,6,3,5,56,56,0,1",
+        "Style: CTA,Noto Sans CJK TC,52,&H0000FFFF,&H000000FF,&H00000000,&HAA000000,1,0,0,0,100,100,0,0,1,5,2,2,88,88,205,1",
     ]
 
 
@@ -1595,8 +1595,8 @@ def motion_graphics_filters(mode: str, duration: float) -> List[str]:
         "drawbox=x='300+30*sin(t*2.2)':y=88:w=480:h=82:color=black@0.68:t=fill",
         "drawbox=x='300+30*sin(t*2.2)':y=88:w=480:h=82:color=yellow@0.80:t=4:enable='between(mod(t\\,4)\\,0\\,2)'",
         "drawbox=x='300+30*sin(t*2.2)':y=88:w=480:h=82:color=cyan@0.80:t=4:enable='between(mod(t\\,4)\\,2\\,4)'",
-        "drawtext=font='Arial Unicode MS':text='今日類型檢查':x='(w-text_w)/2+30*sin(t*2.2)':y=106:fontsize=38:fontcolor=yellow:borderw=5:bordercolor=black@0.95:shadowx=2:shadowy=2:shadowcolor=cyan@0.55",
-        "drawtext=font='Arial Unicode MS':text='留言你的類型':x='w-text_w-96':y=1227:fontsize=30:fontcolor=cyan:borderw=4:bordercolor=black@0.92:shadowx=2:shadowy=2:shadowcolor=yellow@0.50",
+        "drawtext=font='Noto Sans CJK TC':text='今日類型檢查':x='(w-text_w)/2+30*sin(t*2.2)':y=106:fontsize=38:fontcolor=yellow:borderw=5:bordercolor=black@0.95:shadowx=2:shadowy=2:shadowcolor=cyan@0.55",
+        "drawtext=font='Noto Sans CJK TC':text='留言你的類型':x='w-text_w-96':y=1227:fontsize=30:fontcolor=cyan:borderw=4:bordercolor=black@0.92:shadowx=2:shadowy=2:shadowcolor=yellow@0.50",
     ]
     if mode == "None":
         return filters[:2]
