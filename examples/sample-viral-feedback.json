@@ -1,0 +1,27 @@
+{
+  "viralScore": 62,
+  "biggestReasonItMayFlop": "The opening feels too informational and does not create enough emotional tension.",
+  "replacementHook": "If every tiny thing is irritating you today, pause before you react.",
+  "retentionDiagnosis": "The middle needs faster captions and clearer advice by Human Design type.",
+  "audiencePromise": "This gives viewers a reason to understand today's emotional pressure before making decisions.",
+  "captionOverlays": [
+    {
+      "start": "00:00:00.000",
+      "end": "00:00:03.000",
+      "text": "Feeling irritated today?"
+    },
+    {
+      "start": "00:00:03.000",
+      "end": "00:00:08.000",
+      "text": "Pause before making it personal."
+    },
+    {
+      "start": "00:00:08.000",
+      "end": "00:00:14.000",
+      "text": "Your type changes the correct move."
+    }
+  ],
+  "title": "Pause before you react today",
+  "hashtags": ["#humandesign", "#humandesigntypes", "#dailytransit", "#energyforecast"],
+  "revisedScript": "If every tiny thing is irritating you today, pause before you react. The transit is pressing on your awareness, which can make pressure feel like truth. Manifestors: inform before you move. Generators: wait for the body yes. Projectors: do not chase recognition. Reflectors: give it space. Check your chart and drop your type in the comments."
+}

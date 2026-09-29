@@ -1,0 +1,24 @@
+{
+  "title": "Do not force decisions today",
+  "fileName": "sample-thd-reworked.mp4",
+  "topHookText": "Feeling weirdly blocked today?",
+  "bottomCtaText": "Drop your Human Design type",
+  "captionOverlays": [
+    {
+      "start": "00:00:00.000",
+      "end": "00:00:03.000",
+      "text": "Feeling weirdly blocked today?"
+    },
+    {
+      "start": "00:00:03.000",
+      "end": "00:00:08.000",
+      "text": "Do not force a big decision yet."
+    },
+    {
+      "start": "00:00:08.000",
+      "end": "00:00:14.000",
+      "text": "Check your type before reacting."
+    }
+  ],
+  "hashtags": ["#humandesign", "#dailytransit", "#energyforecast"]
+}

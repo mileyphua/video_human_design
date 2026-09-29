@@ -1,0 +1,14 @@
+{
+  "name": "thd-viral-video-rework-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "improve-video": "node scripts/improve-video.mjs",
+    "rework-from-feedback": "node scripts/rework-from-feedback.mjs",
+    "check-video-tools": "node scripts/check-video-tools.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

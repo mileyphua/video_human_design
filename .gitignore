@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.DS_Store
+outputs/
+*.mp4
+*.mov
+*.m4v
+*.srt
+*.vtt

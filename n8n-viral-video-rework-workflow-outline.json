@@ -1,0 +1,60 @@
+{
+  "name": "HeyGen Video Virality Rework Agent",
+  "active": false,
+  "purpose": "Watch a Google Drive folder for manually uploaded HeyGen videos, ask Gemini for a viral audit and FFmpeg edit plan, render a stronger version with free FFmpeg, and upload the result back to Drive.",
+  "requiredEnvironmentVariables": [
+    "GEMINI_API_KEY"
+  ],
+  "requiredCredentials": [
+    "Google Drive OAuth2"
+  ],
+  "folders": {
+    "input": "THD Daily Videos/01_uploaded_heygen",
+    "audit": "THD Daily Videos/02_viral_audit",
+    "reworked": "THD Daily Videos/03_reworked_versions",
+    "ready": "THD Daily Videos/04_ready_to_post"
+  },
+  "nodes": [
+    {
+      "name": "Watch Uploaded HeyGen Videos",
+      "type": "Google Drive Trigger",
+      "description": "Triggers when a new manually rendered HeyGen video appears in the input folder."
+    },
+    {
+      "name": "Download HeyGen Video",
+      "type": "Google Drive",
+      "description": "Downloads the new video as binary data."
+    },
+    {
+      "name": "Upload Video to Gemini File API",
+      "type": "HTTP Request",
+      "description": "Uploads video to Gemini so the model can inspect audio and visuals."
+    },
+    {
+      "name": "Generate Virality Audit",
+      "type": "HTTP Request",
+      "description": "Uses Gemini video understanding and prompts/virality-audit-prompt.md."
+    },
+    {
+      "name": "Generate FFmpeg Edit Plan",
+      "type": "HTTP Request",
+      "description": "Turns feedback into exact caption overlays, hook text, CTA text, and filename."
+    },
+    {
+      "name": "Save Audit to Drive",
+      "type": "Google Drive",
+      "description": "Uploads the audit/edit plan JSON to the audit folder."
+    },
+    {
+      "name": "Render Improved Video",
+      "type": "Execute Command",
+      "description": "Runs npm run improve-video with FFmpeg if the n8n host supports local command execution."
+    },
+    {
+      "name": "Upload Improved Video to Drive",
+      "type": "Google Drive",
+      "description": "Uploads the improved MP4 to the reworked folder."
+    }
+  ],
+  "localRenderCommand": "npm run improve-video -- --input /tmp/input.mp4 --plan /tmp/edit-plan.json --output /tmp/improved.mp4"
+}
