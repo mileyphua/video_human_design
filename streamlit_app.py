@@ -90,6 +90,7 @@ with script_tab:
                 transit = json.loads(transit_json)
             else:
                 transit = fetch_thd_transit(thd_key, thd_base)
+            st.session_state["last_thd_transit"] = transit
             if verified_facts.strip():
                 transit["_verified_transit_facts"] = verified_facts.strip()
             st.session_state["script_payload"] = generate_viral_script(transit, gemini_key, gemini_model, creator_context, language_mode)
@@ -98,6 +99,24 @@ with script_tab:
 
     if use_fallback:
         st.session_state["script_payload"] = fallback_script()
+
+    last_transit = st.session_state.get("last_thd_transit")
+    if last_transit:
+        st.markdown("#### THD daily API response")
+        data = last_transit.get("data") if isinstance(last_transit, dict) else None
+        count = len(data) if isinstance(data, list) else "unknown"
+        if isinstance(data, list) and not data:
+            st.warning("THD returned `data: []` for the daily transit request.")
+        else:
+            st.success(f"THD returned daily transit data count: {count}")
+        with st.expander("Show raw THD meta and data", expanded=False):
+            if isinstance(last_transit, dict):
+                st.markdown("##### meta")
+                st.json(last_transit.get("meta", {}))
+                st.markdown("##### data")
+                st.json(last_transit.get("data", []))
+            else:
+                st.json(last_transit)
 
     payload = st.session_state.get("script_payload")
     if payload:
