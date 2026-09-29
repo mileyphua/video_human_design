@@ -81,6 +81,13 @@ def generate_script_with_lens(transit, gemini_key, gemini_model, lens_context, l
     return generate_viral_script(transit, gemini_key, gemini_model, lens_context, language_mode)
 
 
+def caption_plan_has_text(edit_plan: dict) -> bool:
+    for cap in edit_plan.get("captions", []) if isinstance(edit_plan, dict) else []:
+        if str(cap.get("text", "") if isinstance(cap, dict) else cap).strip():
+            return True
+    return False
+
+
 with st.sidebar:
     st.header("Keys")
     saved_gemini_key = setting("GEMINI_API_KEY")
@@ -417,9 +424,18 @@ with edit_tab:
 
             if subtitle_text and convert_to_zh_tw and gemini_key:
                 with st.spinner("Converting uploaded subtitles to Traditional Chinese (Taiwan)..."):
-                    caption_source_text = translate_srt_to_zh_hant_taiwan(caption_source_text, gemini_key, gemini_model)
+                    try:
+                        caption_source_text = translate_srt_to_zh_hant_taiwan(caption_source_text, gemini_key, gemini_model)
+                    except Exception as exc:
+                        st.warning(f"Subtitle translation failed, so the original subtitles will be used. {exc}")
 
             edit_plan = build_edit_plan_from_script(payload, language_mode, float(render_duration), caption_source_text, caption_style, caption_offset, video_speed, audio_style, False, motion_graphics)
+            if not caption_plan_has_text(edit_plan):
+                fallback_caption_text = script_to_caption_text(payload, language_mode)
+                edit_plan = build_edit_plan_from_script(payload, language_mode, float(render_duration), fallback_caption_text, caption_style, caption_offset, video_speed, audio_style, False, motion_graphics)
+                st.warning("No usable caption text was detected, so the approved script captions are being used for the FFmpeg render.")
+            st.markdown("#### Final caption plan rendered by FFmpeg")
+            st.json(edit_plan.get("captions", []))
             st.session_state["last_edit_plan"] = edit_plan
             with st.spinner("Rendering script-matched captioned viral edit with FFmpeg..."):
                 output_path = workdir / "heygen-viral-edit.mp4"

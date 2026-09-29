@@ -1350,15 +1350,22 @@ def apply_caption_offset(captions: List[Dict[str, Any]], offset: float, duration
 def normalize_caption_times(captions: Any, duration: float) -> List[Dict[str, Any]]:
     if not isinstance(captions, list) or not captions:
         return default_edit_plan()["captions"]
+    captions = [
+        cap
+        for cap in captions
+        if strip_timing_markers(cap.get("text", "") if isinstance(cap, dict) else str(cap))
+    ]
+    if not captions:
+        return default_edit_plan()["captions"]
     normalized = []
     fallback_step = max(2.5, float(duration or 45) / max(len(captions), 1))
     for index, cap in enumerate(captions):
         if isinstance(cap, dict):
-            text = cap.get("text", "")
+            text = strip_timing_markers(cap.get("text", ""))
             start = cap.get("start", index * fallback_step)
             end = cap.get("end", min(float(duration or 45), (index + 1) * fallback_step))
         else:
-            text = str(cap)
+            text = strip_timing_markers(cap)
             start = index * fallback_step
             end = min(float(duration or 45), (index + 1) * fallback_step)
         try:
