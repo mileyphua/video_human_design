@@ -229,8 +229,32 @@ def language_instruction(language_mode: str) -> str:
     return "Write viewer-facing output in English."
 
 
-def build_script_prompt(transit: Dict[str, Any], creator_context: str = "", language_mode: str = "Bilingual") -> str:
+def focus_lens_instruction(focus_lens: str = "關係") -> str:
+    lens = (focus_lens or "關係").strip()
+    instructions = {
+        "關係": (
+            "Selected lens: 關係 / Relationship. Interpret the daily transit through relational dynamics, "
+            "interpersonal connections, attraction/repulsion, conflict, repair, and how each Energy Type should relate with others today."
+        ),
+        "環境": (
+            "Selected lens: 環境 / Environment. Interpret the daily transit through spaces, rooms, workplaces, homes, social fields, "
+            "and how each Energy Type should choose or respond to environments today."
+        ),
+        "制約": (
+            "Selected lens: 制約 / Conditioning. Interpret the daily transit through conditioning patterns, borrowed pressure, open centers, "
+            "and how each Energy Type can notice what is not theirs today."
+        ),
+        "溝通": (
+            "Selected lens: 溝通 / Communication. Interpret the daily transit through speech, listening, timing, misunderstanding, correction, "
+            "and how each Energy Type should communicate today."
+        ),
+    }
+    return instructions.get(lens, instructions["關係"])
+
+
+def build_script_prompt(transit: Dict[str, Any], creator_context: str = "", language_mode: str = "Bilingual", focus_lens: str = "關係") -> str:
     facts = transit_fact_summary(transit)
+    lens_instruction = focus_lens_instruction(focus_lens)
     return f"""
 {SCRIPT_SYSTEM_PROMPT}
 
@@ -257,6 +281,12 @@ Include avatar_motion_cues as an array of beat-by-beat directions. Each cue shou
 
 Language:
 {language_instruction(language_mode)}
+
+Topic lens:
+{lens_instruction}
+
+Type advice requirement:
+The practical hack must give advice for Manifestors, Generators/Manifesting Generators, Projectors, and Reflectors through the selected lens. If the selected lens is 關係, every type's advice must be about relational dynamics and interpersonal connections.
 
 Authoritative transit facts:
 {facts}
@@ -445,7 +475,7 @@ def gate_theme(gate: Any) -> Dict[str, str]:
     )
 
 
-def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingual", note: str = "") -> Dict[str, Any]:
+def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingual", note: str = "", focus_lens: str = "關係") -> Dict[str, Any]:
     sun = planet_gate(transit, "Sun")
     earth = planet_gate(transit, "Earth")
     sun_gate = sun.get("gate", "?")
@@ -454,52 +484,104 @@ def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingua
     earth_line = earth.get("line", "?")
     sun_theme = gate_theme(sun_gate)
     earth_theme = gate_theme(earth_gate)
+    lens = focus_lens if focus_lens in {"關係", "環境", "制約", "溝通"} else "關係"
+    lens_titles = {
+        "關係": ("relationships", "關係"),
+        "環境": ("environment", "環境"),
+        "制約": ("conditioning", "制約"),
+        "溝通": ("communication", "溝通"),
+    }
+    lens_en, lens_zh = lens_titles[lens]
+    type_advice_zh = {
+        "關係": (
+            "顯示者，先告知你的觀察，不要把修正變成命令。"
+            "生產者和顯示型生產者，等身體對這段關係有回應，再投入修補。"
+            "投射者，等對方邀請你看問題，你的洞察才會被聽見。"
+            "反映者，先觀察這段互動讓你變得更清楚，還是更混亂。"
+        ),
+        "環境": (
+            "顯示者，先告知你要移動或調整空間，不要硬推。"
+            "生產者和顯示型生產者，選讓身體有回應的環境，效率會更穩。"
+            "投射者，待在真正看見你的場域，別在錯的房間證明自己。"
+            "反映者，先感受環境是不是放大你的清明，而不是放大焦慮。"
+        ),
+        "制約": (
+            "顯示者，注意你是不是被別人的急迫感推著行動。"
+            "生產者和顯示型生產者，別把別人的錯誤感當成自己的待辦事項。"
+            "投射者，辨認你是不是為了被認可而急著修正別人。"
+            "反映者，給自己時間，看清楚哪些壓力其實不是你的。"
+        ),
+        "溝通": (
+            "顯示者，先告知再指出問題，語氣比速度更重要。"
+            "生產者和顯示型生產者，等有回應再開口，話會更有力量。"
+            "投射者，等對方真的想聽，再給出你的觀察。"
+            "反映者，先聽整個場域，不要急著替大家下結論。"
+        ),
+    }
+    type_advice_en = {
+        "關係": (
+            "Manifestors, inform before correcting so it does not land like a command. "
+            "Generators and Manifesting Generators, wait for your body to respond before repairing the relationship. "
+            "Projectors, wait until your insight is invited. Reflectors, notice whether the connection makes you clearer or more confused."
+        ),
+        "環境": (
+            "Manifestors, inform before changing the room or the plan. "
+            "Generators and Manifesting Generators, choose environments your body responds to. "
+            "Projectors, stay where your guidance is recognized. Reflectors, notice whether the space amplifies clarity or anxiety."
+        ),
+        "制約": (
+            "Manifestors, notice if someone else's urgency is pushing you. "
+            "Generators and Manifesting Generators, do not turn other people's pressure into your to-do list. "
+            "Projectors, check whether you are correcting to earn recognition. Reflectors, take time to see what pressure is not yours."
+        ),
+        "溝通": (
+            "Manifestors, inform before pointing out the problem. "
+            "Generators and Manifesting Generators, wait for a response before speaking. "
+            "Projectors, share the observation when someone actually wants to hear it. Reflectors, listen to the room before naming the truth."
+        ),
+    }
 
-    hook_zh = "如果你今天一直看見問題，先不要急著糾正所有人。"
-    hook_en = "If you keep spotting what is wrong today, pause before you correct everyone."
+    hook_zh = f"如果你今天在{lens_zh}裡一直看見問題，先不要急著糾正所有人。"
+    hook_en = f"If you keep spotting what is wrong in {lens_en} today, pause before you correct everyone."
     script_zh = (
         f"{hook_zh}"
         f"今天太陽落在{sun_gate}號閘門{sun_line}爻，主題是{sun_theme['name_zh']}，"
         f"它會放大你看見錯誤、想把事情修好的敏銳度。"
         f"地球落在{earth_gate}號閘門{earth_line}爻，主題是{earth_theme['name_zh']}，"
         f"它把能量拉回到觀點、邏輯，和別人願不願意聽你的意見。"
-        "所以今天真正的功課不是立刻批判，而是先分辨：這個錯誤現在真的需要我說嗎？"
-        "顯示者，先告知你的觀察，不要直接丟結論。"
-        "生產者和顯示型生產者，等身體有回應，再投入修正。"
-        "投射者，等對方邀請你看問題，你的洞察才會被聽見。"
-        "反映者，先觀察環境，不要吸收大家想挑錯的壓力。"
-        "把你今天最有感的人類圖類型留言給我。"
+        f"所以今天用{lens_zh}的角度看，真正的功課不是立刻批判，而是先分辨：這個錯誤現在真的需要我說嗎？"
+        f"{type_advice_zh[lens]}"
+        f"把你今天最有感的人類圖類型留言給我。"
     )
     script_en = (
         f"{hook_en} "
         f"The Sun is in Gate {sun_gate}, line {sun_line}, the gate of {sun_theme['name_en']}. "
         f"It amplifies the part of you that sees what can be improved. "
         f"The Earth is in Gate {earth_gate}, line {earth_line}, the gate of {earth_theme['name_en']}. "
-        "That grounds the day through opinions, logic, and whether people are actually open to hearing your view. "
-        "So the practice is not instant criticism. Ask: does this correction need to be said right now? "
-        "Manifestors, inform before you point it out. Generators and Manifesting Generators, wait for a body yes before fixing it. "
-        "Projectors, wait until your insight is invited. Reflectors, observe the room before absorbing the pressure. "
+        f"That grounds the day through opinions, logic, and whether people are actually open to hearing your view. "
+        f"Through the lens of {lens_en}, the practice is not instant criticism. Ask: does this correction need to be said right now? "
+        f"{type_advice_en[lens]} "
         "Comment your Human Design type below."
     )
     payload = {
-        "title": f"Daily Human Design Transit: Gate {sun_gate} / Gate {earth_gate}",
-        "title_zh_hant": f"今日人類圖流日：{sun_gate}號閘門 / {earth_gate}號閘門",
+        "title": f"Daily Human Design Transit: {lens_en.title()} Gate {sun_gate} / Gate {earth_gate}",
+        "title_zh_hant": f"今日人類圖流日：{lens_zh}｜{sun_gate}號閘門 / {earth_gate}號閘門",
         "hook": hook_en,
         "hook_zh_hant": hook_zh,
         "script": script_en,
         "script_zh_hant": script_zh,
         "captions": [
-            {"start": 0, "end": 4, "text": "Pause before you correct everyone."},
+            {"start": 0, "end": 4, "text": f"Pause before correcting {lens_en}."},
             {"start": 4, "end": 15, "text": f"Sun Gate {sun_gate}.{sun_line}: correction energy is loud today."},
             {"start": 15, "end": 25, "text": f"Earth Gate {earth_gate}.{earth_line}: opinions need timing."},
-            {"start": 25, "end": 37, "text": "Use your type strategy before fixing the problem."},
+            {"start": 25, "end": 37, "text": f"Use your type strategy in {lens_en}."},
             {"start": 37, "end": 45, "text": "Comment your Human Design type."},
         ],
         "captions_zh_hant": [
-            {"start": 0, "end": 4, "text": "今天先不要急著糾正所有人"},
+            {"start": 0, "end": 4, "text": f"今天在{lens_zh}裡先不要急著糾正"},
             {"start": 4, "end": 15, "text": f"太陽{sun_gate}號閘門{sun_line}爻：看見錯誤"},
             {"start": 15, "end": 25, "text": f"地球{earth_gate}號閘門{earth_line}爻：意見要看時機"},
-            {"start": 25, "end": 37, "text": "先用你的類型策略，再處理問題"},
+            {"start": 25, "end": 37, "text": f"用你的類型策略面對{lens_zh}"},
             {"start": 37, "end": 45, "text": "留言你的人類圖類型"},
         ],
         "hashtags": [
@@ -589,8 +671,9 @@ def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingua
     return clean_script_fields(payload)
 
 
-def refine_script_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str) -> str:
+def refine_script_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str, focus_lens: str = "關係") -> str:
     facts = transit_fact_summary(transit)
+    lens_instruction = focus_lens_instruction(focus_lens)
     return f"""
 You are Agent 2: a short-form virality QA editor.
 Score and improve this Human Design talking-head script before it goes to HeyGen.
@@ -600,6 +683,12 @@ Research-backed virality rules:
 
 Language:
 {language_instruction(language_mode)}
+
+Topic lens:
+{lens_instruction}
+
+Type advice requirement:
+Make sure the practical hack gives type-specific advice through the selected lens for Manifestors, Generators/Manifesting Generators, Projectors, and Reflectors.
 
 Return strict JSON only using the same schema:
 title, title_zh_hant, hook, hook_zh_hant, script, script_zh_hant, captions, captions_zh_hant, hashtags, hashtags_zh_hant, heygen_manual_steps, avatar_motion_cues, virality_check.
@@ -629,8 +718,9 @@ Transit data:
 """.strip()
 
 
-def factual_repair_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str, unsupported_gates: List[str]) -> str:
+def factual_repair_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str, unsupported_gates: List[str], focus_lens: str = "關係") -> str:
     facts = transit_fact_summary(transit)
+    lens_instruction = focus_lens_instruction(focus_lens)
     return f"""
 You are a Human Design factual QA repair editor.
 The current script mentioned unsupported gate numbers: {", ".join(unsupported_gates)}.
@@ -640,6 +730,9 @@ Keep the same strict JSON schema and keep it viral, but factual accuracy is mand
 
 Language:
 {language_instruction(language_mode)}
+
+Topic lens:
+{lens_instruction}
 
 Authoritative transit facts:
 {facts}
@@ -661,37 +754,38 @@ def generate_viral_script(
     model: str,
     creator_context: str,
     language_mode: str = "Bilingual",
+    focus_lens: str = "關係",
 ) -> Dict[str, Any]:
     if not api_key:
-        return transit_based_script(transit, language_mode, "Gemini key was missing, so the local transit-grounded viral generator was used.")
+        return transit_based_script(transit, language_mode, "Gemini key was missing, so the local transit-grounded viral generator was used.", focus_lens)
     if transit_data_is_empty(transit) and not str(transit.get("_verified_transit_facts") or "").strip():
         raise ValueError(
             "THD returned no daily transit records for today. Paste verified transit facts in the corrected-facts box "
             "or check the THD API date/settings before generating a script."
         )
     try:
-        data = parse_json_loose(gemini_generate(build_script_prompt(transit, creator_context, language_mode), api_key, model, 0.85))
+        data = parse_json_loose(gemini_generate(build_script_prompt(transit, creator_context, language_mode, focus_lens), api_key, model, 0.85))
     except Exception as exc:
-        return transit_based_script(transit, language_mode, f"Gemini Agent 1 was unavailable: {exc}")
+        return transit_based_script(transit, language_mode, f"Gemini Agent 1 was unavailable: {exc}", focus_lens)
     base = fallback_script()
     base.update({k: v for k, v in data.items() if v})
     clean_script_fields(base)
     try:
-        refined = parse_json_loose(gemini_generate(refine_script_prompt(base, transit, language_mode), api_key, model, 0.7))
+        refined = parse_json_loose(gemini_generate(refine_script_prompt(base, transit, language_mode, focus_lens), api_key, model, 0.7))
         base.update({k: v for k, v in refined.items() if v})
     except Exception as exc:
-        local_review = transit_based_script(transit, language_mode, f"Gemini Agent 2 virality QA was unavailable: {exc}")
+        local_review = transit_based_script(transit, language_mode, f"Gemini Agent 2 virality QA was unavailable: {exc}", focus_lens)
         base["virality_check"] = local_review.get("virality_check", {})
     clean_script_fields(base)
     unsupported = unsupported_script_gates(base, transit)
     if unsupported:
         try:
-            repaired = parse_json_loose(gemini_generate(factual_repair_prompt(base, transit, language_mode, unsupported), api_key, model, 0.35))
+            repaired = parse_json_loose(gemini_generate(factual_repair_prompt(base, transit, language_mode, unsupported, focus_lens), api_key, model, 0.35))
             base.update({k: v for k, v in repaired.items() if v})
             clean_script_fields(base)
             unsupported = unsupported_script_gates(base, transit)
         except Exception:
-            base = transit_based_script(transit, language_mode, "Local factual repair replaced an unsupported gate mention from the AI draft.")
+            base = transit_based_script(transit, language_mode, "Local factual repair replaced an unsupported gate mention from the AI draft.", focus_lens)
             unsupported = unsupported_script_gates(base, transit)
         if unsupported:
             raise ValueError(

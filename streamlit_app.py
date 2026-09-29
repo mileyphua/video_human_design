@@ -74,6 +74,12 @@ with script_tab:
         min_value=date.today(),
         help="Required. Choose today or a future date. This date is sent to THD and used for script generation.",
     )
+    focus_lens = st.selectbox(
+        "主題視角（關於）",
+        ["關係", "環境", "制約", "溝通"],
+        index=0,
+        help="Required. The daily transit script will be written through this lens for each Energy Type.",
+    )
     col_a, col_b = st.columns(2)
     with col_a:
         fetch = st.button("Fetch THD transit and generate script", type="primary")
@@ -103,7 +109,12 @@ with script_tab:
             st.session_state["last_thd_transit"] = transit
             if verified_facts.strip():
                 transit["_verified_transit_facts"] = verified_facts.strip()
-            st.session_state["script_payload"] = generate_viral_script(transit, gemini_key, gemini_model, creator_context, language_mode)
+            lens_context = (
+                f"{creator_context}\n\n"
+                f"Selected required topic lens: {focus_lens}. "
+                "Use daily transits through this lens for each Energy Type, especially relational dynamics and interpersonal connections when the lens is 關係."
+            )
+            st.session_state["script_payload"] = generate_viral_script(transit, gemini_key, gemini_model, lens_context, language_mode, focus_lens)
         except Exception as exc:
             st.error(f"Script generation failed: {exc}")
 
