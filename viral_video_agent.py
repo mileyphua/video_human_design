@@ -81,6 +81,78 @@ def fetch_thd_transit(api_key: str, base_url: str = "https://api.totalhumandesig
     return response.json()
 
 
+def transit_data_is_empty(transit: Dict[str, Any]) -> bool:
+    data = transit.get("data") if isinstance(transit, dict) else None
+    return isinstance(data, list) and len(data) == 0
+
+
+def flatten_transit_values(value: Any, path: str = "") -> List[str]:
+    lines: List[str] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            child_path = f"{path}.{key}" if path else str(key)
+            lines.extend(flatten_transit_values(item, child_path))
+        return lines
+    if isinstance(value, list):
+        for index, item in enumerate(value[:12]):
+            lines.extend(flatten_transit_values(item, f"{path}[{index}]"))
+        return lines
+    if value not in (None, "", []):
+        lines.append(f"{path}: {value}")
+    return lines
+
+
+def transit_fact_summary(transit: Dict[str, Any]) -> str:
+    verified = str(transit.get("_verified_transit_facts") or "").strip() if isinstance(transit, dict) else ""
+    summary_lines = []
+    if verified:
+        summary_lines.append("USER-VERIFIED FACTS OVERRIDE API INTERPRETATION:")
+        summary_lines.append(verified)
+    if isinstance(transit, dict):
+        compact_lines = flatten_transit_values({k: v for k, v in transit.items() if k != "_verified_transit_facts"})
+        gate_lines = [
+            line
+            for line in compact_lines
+            if re.search(r"(sun|earth|gate|line|太陽|地球|閘門|爻)", line, re.I)
+        ][:80]
+        if gate_lines:
+            summary_lines.append("API FACT LINES:")
+            summary_lines.extend(gate_lines)
+    return "\n".join(summary_lines).strip() or "No authoritative Sun/Earth gate-line facts were found."
+
+
+def authoritative_gate_numbers(transit: Dict[str, Any]) -> List[str]:
+    facts = transit_fact_summary(transit)
+    numbers = set(re.findall(r"Gate\s*(\d{1,2})", facts, re.I))
+    numbers.update(re.findall(r"(\d{1,2})\s*號閘門", facts))
+    return sorted(numbers, key=lambda item: int(item))
+
+
+def script_gate_numbers(payload: Dict[str, Any]) -> List[str]:
+    fields = [
+        str(payload.get("script") or ""),
+        str(payload.get("script_zh_hant") or ""),
+        str(payload.get("hook") or ""),
+        str(payload.get("hook_zh_hant") or ""),
+    ]
+    for cap_field in ("captions", "captions_zh_hant"):
+        for cap in payload.get(cap_field) or []:
+            if isinstance(cap, dict):
+                fields.append(str(cap.get("text") or ""))
+    text = "\n".join(fields)
+    numbers = set(re.findall(r"Gate\s*(\d{1,2})", text, re.I))
+    numbers.update(re.findall(r"(\d{1,2})\s*號閘門", text))
+    return sorted(numbers, key=lambda item: int(item))
+
+
+def unsupported_script_gates(payload: Dict[str, Any], transit: Dict[str, Any]) -> List[str]:
+    allowed = set(authoritative_gate_numbers(transit))
+    mentioned = set(script_gate_numbers(payload))
+    if not allowed:
+        return []
+    return sorted(mentioned - allowed, key=lambda item: int(item))
+
+
 def gemini_generate(prompt: str, api_key: str, model: str = DEFAULT_GEMINI_MODEL, temperature: float = 0.75) -> str:
     if not api_key:
         raise ValueError("Missing GEMINI_API_KEY.")
@@ -147,6 +219,7 @@ def language_instruction(language_mode: str) -> str:
 
 
 def build_script_prompt(transit: Dict[str, Any], creator_context: str = "", language_mode: str = "Bilingual") -> str:
+    facts = transit_fact_summary(transit)
     return f"""
 {SCRIPT_SYSTEM_PROMPT}
 
@@ -173,6 +246,16 @@ Include avatar_motion_cues as an array of beat-by-beat directions. Each cue shou
 
 Language:
 {language_instruction(language_mode)}
+
+Authoritative transit facts:
+{facts}
+
+Factual accuracy rules:
+- You must use the Authoritative transit facts above as the source of truth.
+- Do not invent Sun/Earth gates, lines, centers, or meanings that are not supported by the facts.
+- If user-verified facts are present, they override the raw API response.
+- Explicitly name the actual Sun gate/line and Earth gate/line in the mechanism.
+- If the facts say 太陽18號閘門4爻 and 地球17號閘門4爻, the script must not mention Sun Gate 16 or Earth Gate 9.
 
 Creator context:
 {creator_context or "Audience: Human Design and astrology beginners on TikTok/Reels/Shorts."}
@@ -288,6 +371,7 @@ def fallback_script() -> Dict[str, Any]:
 
 
 def refine_script_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str) -> str:
+    facts = transit_fact_summary(transit)
     return f"""
 You are Agent 2: a short-form virality QA editor.
 Score and improve this Human Design talking-head script before it goes to HeyGen.
@@ -309,11 +393,46 @@ Make the HeyGen avatar motion cues specific enough that the user knows what expr
 Make hashtags bilingual: English discovery tags plus Traditional Chinese tags that a Human Design audience would search or comment with.
 Keep script and script_zh_hant as clean spoken narration only. Never include timestamps, beat labels, markdown bullets, or labels such as "Hook", "Mechanism", or "CTA" inside either script field.
 
+Authoritative transit facts:
+{facts}
+
+Factual QA rules:
+- Verify every gate/line/center statement against the Authoritative transit facts.
+- Remove or rewrite any unsupported gate, line, center, or type advice.
+- If user-verified facts are present, follow them exactly even if the candidate script disagrees.
+- The final script must clearly reflect the actual Sun/Earth facts.
+
 Candidate script JSON:
 {json.dumps(payload, ensure_ascii=False, indent=2)}
 
 Transit data:
 {json.dumps(transit, ensure_ascii=False, indent=2)}
+""".strip()
+
+
+def factual_repair_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str, unsupported_gates: List[str]) -> str:
+    facts = transit_fact_summary(transit)
+    return f"""
+You are a Human Design factual QA repair editor.
+The current script mentioned unsupported gate numbers: {", ".join(unsupported_gates)}.
+
+Rewrite the JSON so every gate/line/center claim follows ONLY the Authoritative transit facts.
+Keep the same strict JSON schema and keep it viral, but factual accuracy is mandatory.
+
+Language:
+{language_instruction(language_mode)}
+
+Authoritative transit facts:
+{facts}
+
+Rules:
+- Remove all unsupported gates: {", ".join(unsupported_gates)}.
+- Explicitly use the actual Sun/Earth gate-line facts from the authoritative facts.
+- Do not invent new gates, lines, centers, or meanings.
+- Keep script and script_zh_hant clean spoken narration only.
+
+Current JSON:
+{json.dumps(payload, ensure_ascii=False, indent=2)}
 """.strip()
 
 
@@ -326,13 +445,31 @@ def generate_viral_script(
 ) -> Dict[str, Any]:
     if not api_key:
         return fallback_script()
+    if transit_data_is_empty(transit) and not str(transit.get("_verified_transit_facts") or "").strip():
+        raise ValueError(
+            "THD returned no daily transit records for today. Paste verified transit facts in the corrected-facts box "
+            "or check the THD API date/settings before generating a script."
+        )
     data = parse_json_loose(gemini_generate(build_script_prompt(transit, creator_context, language_mode), api_key, model, 0.85))
     base = fallback_script()
     base.update({k: v for k, v in data.items() if v})
     clean_script_fields(base)
     refined = parse_json_loose(gemini_generate(refine_script_prompt(base, transit, language_mode), api_key, model, 0.7))
     base.update({k: v for k, v in refined.items() if v})
-    return clean_script_fields(base)
+    clean_script_fields(base)
+    unsupported = unsupported_script_gates(base, transit)
+    if unsupported:
+        repaired = parse_json_loose(gemini_generate(factual_repair_prompt(base, transit, language_mode, unsupported), api_key, model, 0.35))
+        base.update({k: v for k, v in repaired.items() if v})
+        clean_script_fields(base)
+        unsupported = unsupported_script_gates(base, transit)
+        if unsupported:
+            raise ValueError(
+                "Generated script still mentioned unsupported gate(s): "
+                + ", ".join(unsupported)
+                + ". Please tighten the corrected transit facts and try again."
+            )
+    return base
 
 
 def ffmpeg_info(video_path: Path) -> str:

@@ -73,6 +73,15 @@ with script_tab:
     with col_b:
         use_fallback = st.button("Use fallback sample script")
 
+    verified_facts = st.text_area(
+        "Corrected / verified transit facts",
+        height=120,
+        placeholder=(
+            "Example: 太陽落在18號閘門4爻，是找出錯誤的閘門；"
+            "地球落在17號閘門4爻，讓他人比較願意聽看看下位者的意見。"
+        ),
+        help="Use this when the API result is empty or you want to override/ground the AI with verified Sun/Earth gate-line facts.",
+    )
     transit_json = st.text_area("Optional: paste THD transit JSON manually", height=180)
 
     if fetch:
@@ -81,6 +90,8 @@ with script_tab:
                 transit = json.loads(transit_json)
             else:
                 transit = fetch_thd_transit(thd_key, thd_base)
+            if verified_facts.strip():
+                transit["_verified_transit_facts"] = verified_facts.strip()
             st.session_state["script_payload"] = generate_viral_script(transit, gemini_key, gemini_model, creator_context, language_mode)
         except Exception as exc:
             st.error(f"Script generation failed: {exc}")
