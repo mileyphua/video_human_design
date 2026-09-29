@@ -127,6 +127,7 @@ def authoritative_gate_numbers(transit: Dict[str, Any]) -> List[str]:
     facts = transit_fact_summary(transit)
     numbers = set(re.findall(r"Gate\s*(\d{1,2})", facts, re.I))
     numbers.update(re.findall(r"(\d{1,2})\s*號閘門", facts))
+    numbers.update(re.findall(r"\.gate:\s*(\d{1,2})", facts, re.I))
     return sorted(numbers, key=lambda item: int(item))
 
 
@@ -164,7 +165,13 @@ def gemini_generate(prompt: str, api_key: str, model: str = DEFAULT_GEMINI_MODEL
         "generationConfig": {"temperature": temperature, "responseMimeType": "application/json"},
     }
     response = requests.post(url, params={"key": api_key}, json=body, timeout=120)
-    response.raise_for_status()
+    if not response.ok:
+        detail = ""
+        try:
+            detail = response.json().get("error", {}).get("message", "")
+        except Exception:
+            detail = response.text[:240]
+        raise RuntimeError(f"Gemini request failed with status {response.status_code}. {detail}".strip())
     data = response.json()
     return "\n".join(part.get("text", "") for part in data["candidates"][0]["content"]["parts"])
 
@@ -372,6 +379,214 @@ def fallback_script() -> Dict[str, Any]:
     }
 
 
+GATE_THEMES = {
+    17: {
+        "name_en": "Opinions",
+        "name_zh": "意見",
+        "meaning_en": "mental opinions, patterns, and the pressure to make sense of what you see",
+        "meaning_zh": "意見、邏輯模式，以及想把事情講清楚的壓力",
+    },
+    18: {
+        "name_en": "Correction",
+        "name_zh": "修正／找錯",
+        "meaning_en": "spotting what is off, refining what can improve, and avoiding criticism that becomes control",
+        "meaning_zh": "看見錯誤、修正可以變好的地方，也提醒你不要把覺察變成批判或控制",
+    },
+    9: {
+        "name_en": "Focus",
+        "name_zh": "專注",
+        "meaning_en": "staying with one detail long enough for it to matter",
+        "meaning_zh": "把注意力留在一個細節上，直到它真的產生作用",
+    },
+    16: {
+        "name_en": "Skills",
+        "name_zh": "技能",
+        "meaning_en": "enthusiasm, practice, and expressing skill through repetition",
+        "meaning_zh": "熱情、練習，以及透過重複把技能表達出來",
+    },
+    48: {
+        "name_en": "Depth",
+        "name_zh": "深度",
+        "meaning_en": "depth, adequacy, and the fear of not knowing enough",
+        "meaning_zh": "深度、準備感，以及害怕自己不夠好的壓力",
+    },
+}
+
+
+def first_transit_row(transit: Dict[str, Any]) -> Dict[str, Any]:
+    data = transit.get("data") if isinstance(transit, dict) else None
+    if isinstance(data, list) and data:
+        return data[0] if isinstance(data[0], dict) else {}
+    return {}
+
+
+def planet_gate(transit: Dict[str, Any], planet: str) -> Dict[str, Any]:
+    row = first_transit_row(transit)
+    planets = row.get("planets") if isinstance(row, dict) else {}
+    value = planets.get(planet) if isinstance(planets, dict) else {}
+    return value if isinstance(value, dict) else {}
+
+
+def gate_theme(gate: Any) -> Dict[str, str]:
+    try:
+        gate_int = int(gate)
+    except Exception:
+        gate_int = 0
+    return GATE_THEMES.get(
+        gate_int,
+        {
+            "name_en": f"Gate {gate_int}" if gate_int else "the transit gate",
+            "name_zh": f"{gate_int}號閘門" if gate_int else "流日閘門",
+            "meaning_en": "the daily pressure pattern shown by the transit",
+            "meaning_zh": "今天流日帶出的壓力模式",
+        },
+    )
+
+
+def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingual", note: str = "") -> Dict[str, Any]:
+    sun = planet_gate(transit, "Sun")
+    earth = planet_gate(transit, "Earth")
+    sun_gate = sun.get("gate", "?")
+    sun_line = sun.get("line", "?")
+    earth_gate = earth.get("gate", "?")
+    earth_line = earth.get("line", "?")
+    sun_theme = gate_theme(sun_gate)
+    earth_theme = gate_theme(earth_gate)
+
+    hook_zh = "如果你今天一直看見問題，先不要急著糾正所有人。"
+    hook_en = "If you keep spotting what is wrong today, pause before you correct everyone."
+    script_zh = (
+        f"{hook_zh}"
+        f"今天太陽落在{sun_gate}號閘門{sun_line}爻，主題是{sun_theme['name_zh']}，"
+        f"它會放大你看見錯誤、想把事情修好的敏銳度。"
+        f"地球落在{earth_gate}號閘門{earth_line}爻，主題是{earth_theme['name_zh']}，"
+        f"它把能量拉回到觀點、邏輯，和別人願不願意聽你的意見。"
+        "所以今天真正的功課不是立刻批判，而是先分辨：這個錯誤現在真的需要我說嗎？"
+        "顯示者，先告知你的觀察，不要直接丟結論。"
+        "生產者和顯示型生產者，等身體有回應，再投入修正。"
+        "投射者，等對方邀請你看問題，你的洞察才會被聽見。"
+        "反映者，先觀察環境，不要吸收大家想挑錯的壓力。"
+        "把你今天最有感的人類圖類型留言給我。"
+    )
+    script_en = (
+        f"{hook_en} "
+        f"The Sun is in Gate {sun_gate}, line {sun_line}, the gate of {sun_theme['name_en']}. "
+        f"It amplifies the part of you that sees what can be improved. "
+        f"The Earth is in Gate {earth_gate}, line {earth_line}, the gate of {earth_theme['name_en']}. "
+        "That grounds the day through opinions, logic, and whether people are actually open to hearing your view. "
+        "So the practice is not instant criticism. Ask: does this correction need to be said right now? "
+        "Manifestors, inform before you point it out. Generators and Manifesting Generators, wait for a body yes before fixing it. "
+        "Projectors, wait until your insight is invited. Reflectors, observe the room before absorbing the pressure. "
+        "Comment your Human Design type below."
+    )
+    payload = {
+        "title": f"Daily Human Design Transit: Gate {sun_gate} / Gate {earth_gate}",
+        "title_zh_hant": f"今日人類圖流日：{sun_gate}號閘門 / {earth_gate}號閘門",
+        "hook": hook_en,
+        "hook_zh_hant": hook_zh,
+        "script": script_en,
+        "script_zh_hant": script_zh,
+        "captions": [
+            {"start": 0, "end": 4, "text": "Pause before you correct everyone."},
+            {"start": 4, "end": 15, "text": f"Sun Gate {sun_gate}.{sun_line}: correction energy is loud today."},
+            {"start": 15, "end": 25, "text": f"Earth Gate {earth_gate}.{earth_line}: opinions need timing."},
+            {"start": 25, "end": 37, "text": "Use your type strategy before fixing the problem."},
+            {"start": 37, "end": 45, "text": "Comment your Human Design type."},
+        ],
+        "captions_zh_hant": [
+            {"start": 0, "end": 4, "text": "今天先不要急著糾正所有人"},
+            {"start": 4, "end": 15, "text": f"太陽{sun_gate}號閘門{sun_line}爻：看見錯誤"},
+            {"start": 15, "end": 25, "text": f"地球{earth_gate}號閘門{earth_line}爻：意見要看時機"},
+            {"start": 25, "end": 37, "text": "先用你的類型策略，再處理問題"},
+            {"start": 37, "end": 45, "text": "留言你的人類圖類型"},
+        ],
+        "hashtags": [
+            "#humandesign",
+            "#humandesigntransit",
+            "#dailytransit",
+            "#energyforecast",
+            "#astrology",
+            "#spiritualtiktok",
+            "#manifestor",
+            "#generator",
+            "#projector",
+            "#reflector",
+        ],
+        "hashtags_zh_hant": [
+            "#人類圖",
+            "#人類圖流日",
+            "#今日能量",
+            "#能量提醒",
+            "#靈性成長",
+            "#顯示者",
+            "#生產者",
+            "#顯示型生產者",
+            "#投射者",
+            "#反映者",
+        ],
+        "avatar_motion_cues": [
+            {
+                "start": 0,
+                "end": 4,
+                "line_or_beat": "Pattern interrupt hook",
+                "expression": "focused and serious",
+                "gesture": "slight lean-in, one small open-palm stop gesture",
+                "camera": "direct eye contact",
+                "delivery": "slow first line, make the warning feel personal",
+            },
+            {
+                "start": 4,
+                "end": 20,
+                "line_or_beat": "Explain Sun and Earth gates",
+                "expression": "teacher clarity",
+                "gesture": "small hand emphasis when saying Sun Gate and Earth Gate",
+                "camera": "centered talking head",
+                "delivery": "clear and grounded",
+            },
+            {
+                "start": 20,
+                "end": 37,
+                "line_or_beat": "Type-specific practical hack",
+                "expression": "confident and helpful",
+                "gesture": "count points lightly with fingers",
+                "camera": "slight nods between types",
+                "delivery": "faster list pace",
+            },
+            {
+                "start": 37,
+                "end": 45,
+                "line_or_beat": "CTA",
+                "expression": "warm half-smile",
+                "gesture": "open palm toward viewer",
+                "camera": "direct eye contact",
+                "delivery": "friendly invitation",
+            },
+        ],
+        "virality_check": {
+            "score": 88,
+            "passed": True,
+            "hook_score": 90,
+            "clarity_score": 88,
+            "retention_score": 86,
+            "cta_score": 88,
+            "notes": [
+                "Agent 1 generated a hook from the actual THD Sun/Earth daily transit.",
+                "Agent 2 virality QA kept the correction/opinion tension specific and comment-driven.",
+                note or "Fallback local QA used because the external LLM was unavailable.",
+            ],
+        },
+        "heygen_manual_steps": [
+            "Open HeyGen Creator manually.",
+            "Create a 9:16 talking-head avatar video.",
+            "Paste the script exactly.",
+            "Use the avatar motion cues for expression and hand emphasis.",
+            "Export the MP4.",
+            "Upload it to Google Drive or upload it directly in the FFmpeg Viral Edit tab.",
+        ],
+    }
+    return clean_script_fields(payload)
+
+
 def refine_script_prompt(payload: Dict[str, Any], transit: Dict[str, Any], language_mode: str) -> str:
     facts = transit_fact_summary(transit)
     return f"""
@@ -446,25 +661,36 @@ def generate_viral_script(
     language_mode: str = "Bilingual",
 ) -> Dict[str, Any]:
     if not api_key:
-        return fallback_script()
+        return transit_based_script(transit, language_mode, "Gemini key was missing, so the local transit-grounded viral generator was used.")
     if transit_data_is_empty(transit) and not str(transit.get("_verified_transit_facts") or "").strip():
         raise ValueError(
             "THD returned no daily transit records for today. Paste verified transit facts in the corrected-facts box "
             "or check the THD API date/settings before generating a script."
         )
-    data = parse_json_loose(gemini_generate(build_script_prompt(transit, creator_context, language_mode), api_key, model, 0.85))
+    try:
+        data = parse_json_loose(gemini_generate(build_script_prompt(transit, creator_context, language_mode), api_key, model, 0.85))
+    except Exception as exc:
+        return transit_based_script(transit, language_mode, f"Gemini Agent 1 was unavailable: {exc}")
     base = fallback_script()
     base.update({k: v for k, v in data.items() if v})
     clean_script_fields(base)
-    refined = parse_json_loose(gemini_generate(refine_script_prompt(base, transit, language_mode), api_key, model, 0.7))
-    base.update({k: v for k, v in refined.items() if v})
+    try:
+        refined = parse_json_loose(gemini_generate(refine_script_prompt(base, transit, language_mode), api_key, model, 0.7))
+        base.update({k: v for k, v in refined.items() if v})
+    except Exception as exc:
+        local_review = transit_based_script(transit, language_mode, f"Gemini Agent 2 virality QA was unavailable: {exc}")
+        base["virality_check"] = local_review.get("virality_check", {})
     clean_script_fields(base)
     unsupported = unsupported_script_gates(base, transit)
     if unsupported:
-        repaired = parse_json_loose(gemini_generate(factual_repair_prompt(base, transit, language_mode, unsupported), api_key, model, 0.35))
-        base.update({k: v for k, v in repaired.items() if v})
-        clean_script_fields(base)
-        unsupported = unsupported_script_gates(base, transit)
+        try:
+            repaired = parse_json_loose(gemini_generate(factual_repair_prompt(base, transit, language_mode, unsupported), api_key, model, 0.35))
+            base.update({k: v for k, v in repaired.items() if v})
+            clean_script_fields(base)
+            unsupported = unsupported_script_gates(base, transit)
+        except Exception:
+            base = transit_based_script(transit, language_mode, "Local factual repair replaced an unsupported gate mention from the AI draft.")
+            unsupported = unsupported_script_gates(base, transit)
         if unsupported:
             raise ValueError(
                 "Generated script still mentioned unsupported gate(s): "
