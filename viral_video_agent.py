@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -70,11 +70,13 @@ def download_drive_file(shared_link_or_id: str, output_path: Path) -> Path:
 
 
 def fetch_thd_transit(api_key: str, base_url: str = "https://api.totalhumandesign.com") -> Dict[str, Any]:
-    today = datetime.now().strftime("%Y-%m-%d")
+    today_dt = datetime.now()
+    today = today_dt.strftime("%Y-%m-%d")
+    tomorrow = (today_dt + timedelta(days=1)).strftime("%Y-%m-%d")
     response = requests.get(
-        f"{base_url.rstrip('/')}/api/transits/all",
+        f"{base_url.rstrip('/')}/api/transit-range",
         headers={"Authorization": f"Bearer {api_key}"},
-        params={"startDate": today, "endDate": today, "granularity": "daily", "format": "full"},
+        params={"startDate": today, "endDate": tomorrow, "granularity": "daily", "format": "full"},
         timeout=60,
     )
     response.raise_for_status()
