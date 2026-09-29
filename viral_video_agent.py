@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ import requests
 
 
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+LAST_VIRAL_HOOK_BY_LENS: Dict[str, str] = {}
 
 
 SCRIPT_SYSTEM_PROMPT = (
@@ -267,6 +269,9 @@ Script Formula:
 3. The Practical Hack (20-35s): Actionable advice for Manifestors, Generators, Projectors, and Reflectors.
 4. Call to Action (35-45s): "Check your chart to see if your throat center is open, and drop your type in the comments."
 
+Hook variation rule:
+Create a fresh viral hook every generation. Do not reuse the same hook wording or structure repeatedly. Label the hook concept as viral in virality_check.viral_hook, but keep script/script_zh_hant clean narration only without labels.
+
 Important formatting rule:
 script and script_zh_hant must be clean narration only for HeyGen lip sync. Do not include timestamps, beat labels, section labels, parentheses like "(0-3s)", or markdown bullets inside script/script_zh_hant. Timing belongs only in captions.start/end and avatar_motion_cues.start/end.
 
@@ -475,6 +480,47 @@ def gate_theme(gate: Any) -> Dict[str, str]:
     )
 
 
+def viral_hook_pair(lens: str, sun_gate: Any, earth_gate: Any, sun_theme: Dict[str, str], earth_theme: Dict[str, str]) -> Dict[str, str]:
+    lens_titles = {
+        "關係": ("relationships", "關係"),
+        "環境": ("environment", "環境"),
+        "制約": ("conditioning", "制約"),
+        "溝通": ("communication", "溝通"),
+    }
+    lens_en, lens_zh = lens_titles.get(lens, lens_titles["關係"])
+    hooks = [
+        {
+            "zh": f"今天你在{lens_zh}裡看見的問題，可能不是要你立刻修正，而是要你先看清楚。",
+            "en": f"The problem you notice in {lens_en} today may not be asking for an instant fix. It may be asking for clarity first.",
+        },
+        {
+            "zh": f"如果今天某個人在{lens_zh}裡讓你很想糾正他，先等一下，這不是巧合。",
+            "en": f"If someone in {lens_en} makes you want to correct them today, pause. That is not random.",
+        },
+        {
+            "zh": f"今天最危險的不是錯誤本身，而是你太快在{lens_zh}裡把它說出口。",
+            "en": f"The risky part today is not the mistake itself. It is saying it too quickly in {lens_en}.",
+        },
+        {
+            "zh": f"今天{sun_gate}號閘門在提醒你：看見問題，不代表你現在就要成為那個糾正的人。",
+            "en": f"Gate {sun_gate} is the reminder today: seeing the problem does not mean you must be the person who corrects it immediately.",
+        },
+        {
+            "zh": f"如果你今天在{lens_zh}裡覺得『這個不對』，先別急著反應，地球{earth_gate}號閘門有話要說。",
+            "en": f"If you feel 'this is not right' in {lens_en} today, do not react too fast. Earth Gate {earth_gate} has something to teach.",
+        },
+        {
+            "zh": f"今天的流日不是叫你挑剔，而是教你怎麼在{lens_zh}裡把真話說得被聽見。",
+            "en": f"Today's transit is not asking you to nitpick. It is teaching you how truth can be heard in {lens_en}.",
+        },
+    ]
+    previous = LAST_VIRAL_HOOK_BY_LENS.get(lens)
+    choices = [hook for hook in hooks if hook["zh"] != previous] or hooks
+    selected = random.SystemRandom().choice(choices)
+    LAST_VIRAL_HOOK_BY_LENS[lens] = selected["zh"]
+    return selected
+
+
 def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingual", note: str = "", focus_lens: str = "關係") -> Dict[str, Any]:
     sun = planet_gate(transit, "Sun")
     earth = planet_gate(transit, "Earth")
@@ -541,8 +587,9 @@ def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingua
         ),
     }
 
-    hook_zh = f"如果你今天在{lens_zh}裡一直看見問題，先不要急著糾正所有人。"
-    hook_en = f"If you keep spotting what is wrong in {lens_en} today, pause before you correct everyone."
+    hook_pair = viral_hook_pair(lens, sun_gate, earth_gate, sun_theme, earth_theme)
+    hook_zh = hook_pair["zh"]
+    hook_en = hook_pair["en"]
     script_zh = (
         f"{hook_zh}"
         f"今天太陽落在{sun_gate}號閘門{sun_line}爻，主題是{sun_theme['name_zh']}，"
@@ -649,12 +696,13 @@ def transit_based_script(transit: Dict[str, Any], language_mode: str = "Bilingua
         "virality_check": {
             "score": 88,
             "passed": True,
+            "viral_hook": hook_zh,
             "hook_score": 90,
             "clarity_score": 88,
             "retention_score": 86,
             "cta_score": 88,
             "notes": [
-                "Agent 1 generated a hook from the actual THD Sun/Earth daily transit.",
+                "Agent 1 generated a viral hook from the actual THD Sun/Earth daily transit and selected dropdown lens.",
                 "Agent 2 virality QA kept the correction/opinion tension specific and comment-driven.",
                 note or "Fallback local QA used because the external LLM was unavailable.",
             ],
@@ -694,9 +742,10 @@ Return strict JSON only using the same schema:
 title, title_zh_hant, hook, hook_zh_hant, script, script_zh_hant, captions, captions_zh_hant, hashtags, hashtags_zh_hant, heygen_manual_steps, avatar_motion_cues, virality_check.
 
 virality_check must include:
-score 0-100, passed boolean, notes array, hook_score, clarity_score, retention_score, cta_score.
+score 0-100, passed boolean, notes array, hook_score, clarity_score, retention_score, cta_score, viral_hook.
 
 If score is below 85, rewrite the hook/script/captions until it is at least 85.
+The final hook must be a fresh viral hook, not repeated from the prior candidate wording.
 Make the HeyGen avatar motion cues specific enough that the user knows what expression, gesture, camera feel, and delivery to choose for each beat.
 Make hashtags bilingual: English discovery tags plus Traditional Chinese tags that a Human Design audience would search or comment with.
 Keep script and script_zh_hant as clean spoken narration only. Never include timestamps, beat labels, markdown bullets, or labels such as "Hook", "Mechanism", or "CTA" inside either script field.

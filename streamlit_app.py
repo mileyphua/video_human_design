@@ -208,11 +208,14 @@ with script_tab:
         if payload.get("script_zh_hant"):
             st.markdown("#### 繁體中文腳本")
             st.code(payload.get("script_zh_hant", ""), language="text")
-        st.markdown("#### Hook")
+        st.markdown("#### Viral Hook")
         st.write(payload.get("hook", ""))
         if payload.get("hook_zh_hant"):
-            st.markdown("#### 繁體中文 Hook")
+            st.markdown("#### 繁體中文 Viral Hook")
             st.write(payload.get("hook_zh_hant", ""))
+        virality = payload.get("virality_check") or {}
+        if virality.get("viral_hook"):
+            st.caption(f"AI agent viral hook: {virality.get('viral_hook')}")
         st.markdown("#### Hashtags")
         all_hashtags = []
         for tag in (payload.get("hashtags", []) or []) + (payload.get("hashtags_zh_hant", []) or []):
