@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import inspect
 from datetime import date
 from pathlib import Path
 
@@ -37,6 +38,47 @@ def setting(name: str, default: str = "") -> str:
     except Exception:
         value = ""
     return str(value or os.getenv(name, default) or "")
+
+
+def thd_sun_earth_summary(transit: dict) -> dict:
+    data = transit.get("data") if isinstance(transit, dict) else None
+    first_row = data[0] if isinstance(data, list) and data and isinstance(data[0], dict) else {}
+    planets = first_row.get("planets", {}) if isinstance(first_row, dict) else {}
+    sun = planets.get("Sun", {}) if isinstance(planets, dict) else {}
+    earth = planets.get("Earth", {}) if isinstance(planets, dict) else {}
+    return {
+        "datetime": first_row.get("datetime"),
+        "sun_gate": sun.get("gate"),
+        "sun_line": sun.get("line"),
+        "earth_gate": earth.get("gate"),
+        "earth_line": earth.get("line"),
+    }
+
+
+def script_matches_transit_and_lens(payload: dict, transit: dict, focus_lens: str) -> bool:
+    summary = thd_sun_earth_summary(transit)
+    text = "\n".join(
+        str(payload.get(field, ""))
+        for field in ("title", "title_zh_hant", "hook", "hook_zh_hant", "script", "script_zh_hant")
+    )
+    for value in (summary.get("sun_gate"), summary.get("earth_gate")):
+        if value is not None and str(value) not in text:
+            return False
+    return focus_lens in text
+
+
+def generate_script_with_lens(transit, gemini_key, gemini_model, lens_context, language_mode, focus_lens):
+    params = inspect.signature(generate_viral_script).parameters
+    if "focus_lens" in params:
+        return generate_viral_script(
+            transit,
+            gemini_key,
+            gemini_model,
+            lens_context,
+            language_mode,
+            focus_lens=focus_lens,
+        )
+    return generate_viral_script(transit, gemini_key, gemini_model, lens_context, language_mode)
 
 
 with st.sidebar:
@@ -114,7 +156,13 @@ with script_tab:
                 f"Selected required topic lens: {focus_lens}. "
                 "Use daily transits through this lens for each Energy Type, especially relational dynamics and interpersonal connections when the lens is 關係."
             )
-            st.session_state["script_payload"] = generate_viral_script(transit, gemini_key, gemini_model, lens_context, language_mode, focus_lens)
+            script_payload = generate_script_with_lens(transit, gemini_key, gemini_model, lens_context, language_mode, focus_lens)
+            if not script_matches_transit_and_lens(script_payload, transit, focus_lens):
+                raise ValueError(
+                    "Generated script did not clearly match the returned THD Sun/Earth data and selected dropdown lens. "
+                    "Please wait for Streamlit to finish redeploying the latest version, then generate again."
+                )
+            st.session_state["script_payload"] = script_payload
         except Exception as exc:
             st.error(f"Script generation failed: {exc}")
 

@@ -166,7 +166,7 @@ def gemini_generate(prompt: str, api_key: str, model: str = DEFAULT_GEMINI_MODEL
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": temperature, "responseMimeType": "application/json"},
     }
-    response = requests.post(url, params={"key": api_key}, json=body, timeout=120)
+    response = requests.post(url, params={"key": api_key}, json=body, timeout=35)
     if not response.ok:
         detail = ""
         try:
