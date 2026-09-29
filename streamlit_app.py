@@ -102,14 +102,26 @@ with script_tab:
 
     last_transit = st.session_state.get("last_thd_transit")
     if last_transit:
-        st.markdown("#### THD daily API response")
+        st.markdown("#### THD daily returned data response")
         data = last_transit.get("data") if isinstance(last_transit, dict) else None
         count = len(data) if isinstance(data, list) else "unknown"
         if isinstance(data, list) and not data:
             st.warning("THD returned `data: []` for the daily transit request.")
         else:
             st.success(f"THD returned daily transit data count: {count}")
-        with st.expander("Show raw THD meta and data", expanded=False):
+            first_row = data[0] if isinstance(data, list) and data and isinstance(data[0], dict) else {}
+            planets = first_row.get("planets", {}) if isinstance(first_row, dict) else {}
+            sun = planets.get("Sun", {}) if isinstance(planets, dict) else {}
+            earth = planets.get("Earth", {}) if isinstance(planets, dict) else {}
+            if sun or earth:
+                st.write(
+                    {
+                        "datetime": first_row.get("datetime"),
+                        "Sun": {"gate": sun.get("gate"), "line": sun.get("line"), "sign": sun.get("sign")},
+                        "Earth": {"gate": earth.get("gate"), "line": earth.get("line"), "sign": earth.get("sign")},
+                    }
+                )
+        with st.expander("Raw THD meta and data used for this script", expanded=True):
             if isinstance(last_transit, dict):
                 st.markdown("##### meta")
                 st.json(last_transit.get("meta", {}))
