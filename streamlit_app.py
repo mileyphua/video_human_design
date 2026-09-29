@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from datetime import date
 from pathlib import Path
 
 import streamlit as st
@@ -67,6 +68,12 @@ with script_tab:
         "Audience: Human Design and astrology beginners on TikTok, Instagram Reels, and YouTube Shorts.",
         height=80,
     )
+    selected_transit_date = st.date_input(
+        "THD transit date",
+        value=date.today(),
+        min_value=date.today(),
+        help="Required. Choose today or a future date. This date is sent to THD and used for script generation.",
+    )
     col_a, col_b = st.columns(2)
     with col_a:
         fetch = st.button("Fetch THD transit and generate script", type="primary")
@@ -89,7 +96,10 @@ with script_tab:
             if transit_json.strip():
                 transit = json.loads(transit_json)
             else:
-                transit = fetch_thd_transit(thd_key, thd_base)
+                if not selected_transit_date:
+                    st.error("Please choose a THD transit date before generating the script.")
+                    st.stop()
+                transit = fetch_thd_transit(thd_key, thd_base, selected_transit_date)
             st.session_state["last_thd_transit"] = transit
             if verified_facts.strip():
                 transit["_verified_transit_facts"] = verified_facts.strip()

@@ -69,10 +69,12 @@ def download_drive_file(shared_link_or_id: str, output_path: Path) -> Path:
     return output_path
 
 
-def fetch_thd_transit(api_key: str, base_url: str = "https://api.totalhumandesign.com") -> Dict[str, Any]:
-    today_dt = datetime.now()
-    today = today_dt.strftime("%Y-%m-%d")
-    tomorrow = (today_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+def fetch_thd_transit(api_key: str, base_url: str = "https://api.totalhumandesign.com", target_date: Any = None) -> Dict[str, Any]:
+    selected_dt = target_date or datetime.now()
+    if isinstance(selected_dt, str):
+        selected_dt = datetime.fromisoformat(selected_dt)
+    today = selected_dt.strftime("%Y-%m-%d")
+    tomorrow = (selected_dt + timedelta(days=1)).strftime("%Y-%m-%d")
     response = requests.get(
         f"{base_url.rstrip('/')}/api/transit-range",
         headers={"Authorization": f"Bearer {api_key}"},
